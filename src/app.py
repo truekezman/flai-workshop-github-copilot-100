@@ -6,7 +6,7 @@ for extracurricular activities at Mergington High School.
 """
 
 from fastapi import FastAPI, HTTPException
-import pydantic
+from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 import os
@@ -88,7 +88,7 @@ def root():
 
 
 # Modelo para requisição de remoção
-class UnregisterRequest(pydantic.BaseModel):
+class UnregisterRequest(BaseModel):
     participant: str
     activity: str
 
