@@ -20,32 +20,58 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
-        // Create participants list HTML
-        let participantsHTML = "";
-        if (details.participants && details.participants.length > 0) {
-          participantsHTML = `
-            <div class="participants-section">
-              <strong>Participants:</strong>
-              <ul class="participants-list">
-                ${details.participants.map(p => `<li>${p}</li>`).join("")}
-              </ul>
-            </div>
-          `;
-        } else {
-          participantsHTML = `
-            <div class="participants-section empty">
-              <em>No participants yet.</em>
-            </div>
-          `;
-        }
-
+        // Title and info
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
-          ${participantsHTML}
         `;
+
+        // Participants section
+        const participantsSection = document.createElement('div');
+        if (details.participants && details.participants.length > 0) {
+          participantsSection.className = 'participants-section';
+          const strong = document.createElement('strong');
+          strong.textContent = 'Participants:';
+          participantsSection.appendChild(strong);
+
+          const ul = document.createElement('ul');
+          ul.className = 'participants-list';
+          details.participants.forEach(participant => {
+            const li = document.createElement('li');
+            li.style.listStyleType = 'none';
+            li.style.display = 'flex';
+            li.style.alignItems = 'center';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = participant;
+            nameSpan.style.flex = '1';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.title = 'Unregister participant';
+            deleteBtn.style.marginLeft = '8px';
+            deleteBtn.style.background = 'none';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.fontSize = '1.1em';
+            deleteBtn.addEventListener('click', function() {
+              unregisterParticipant(participant, name);
+            });
+
+            li.appendChild(nameSpan);
+            li.appendChild(deleteBtn);
+            ul.appendChild(li);
+          });
+          participantsSection.appendChild(ul);
+        } else {
+          participantsSection.className = 'participants-section empty';
+          const em = document.createElement('em');
+          em.textContent = 'No participants yet.';
+          participantsSection.appendChild(em);
+        }
+        activityCard.appendChild(participantsSection);
 
         activitiesList.appendChild(activityCard);
 
@@ -132,13 +158,13 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  function unregisterParticipant(participant) {
+  function unregisterParticipant(participant, activity) {
     fetch(`/unregister`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ participant }),
+      body: JSON.stringify({ participant, activity }),
     })
     .then(response => {
       if (!response.ok) throw new Error('Failed to unregister');
@@ -146,10 +172,7 @@ document.addEventListener("DOMContentLoaded", function() {
     })
     .then(data => {
       if (data.success) {
-        // Refresh the participant list
-        if (typeof loadParticipants === 'function') {
-          loadParticipants();
-        }
+        fetchActivities();
       }
     })
     .catch(err => {
