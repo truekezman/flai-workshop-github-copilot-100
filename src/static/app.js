@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", function() {
   const activitiesList = document.getElementById("activities-list");
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
@@ -20,12 +20,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // Title and info
         activityCard.innerHTML = `
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
         `;
+
+        // Participants section
+        const participantsSection = document.createElement('div');
+        if (details.participants && details.participants.length > 0) {
+          participantsSection.className = 'participants-section';
+          const strong = document.createElement('strong');
+          strong.textContent = 'Participants:';
+          participantsSection.appendChild(strong);
+
+          const ul = document.createElement('ul');
+          ul.className = 'participants-list';
+          details.participants.forEach(participant => {
+            const li = document.createElement('li');
+            li.style.listStyleType = 'none';
+            li.style.display = 'flex';
+            li.style.alignItems = 'center';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = participant;
+            nameSpan.style.flex = '1';
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.title = 'Unregister participant';
+            deleteBtn.style.marginLeft = '8px';
+            deleteBtn.style.background = 'none';
+            deleteBtn.style.border = 'none';
+            deleteBtn.style.cursor = 'pointer';
+            deleteBtn.style.fontSize = '1.1em';
+            deleteBtn.addEventListener('click', function() {
+              unregisterParticipant(participant, name);
+            });
+
+            li.appendChild(nameSpan);
+            li.appendChild(deleteBtn);
+            ul.appendChild(li);
+          });
+          participantsSection.appendChild(ul);
+        } else {
+          participantsSection.className = 'participants-section empty';
+          const em = document.createElement('em');
+          em.textContent = 'No participants yet.';
+          participantsSection.appendChild(em);
+        }
+        activityCard.appendChild(participantsSection);
 
         activitiesList.appendChild(activityCard);
 
@@ -62,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        fetchActivities(); // Atualiza a lista de atividades/participantes
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
@@ -81,6 +128,60 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  function renderParticipants(participants) {
+    const list = document.getElementById('participants-list');
+    list.innerHTML = '';
+    participants.forEach(function(participant) {
+      const li = document.createElement('li');
+      li.style.listStyleType = 'none'; // Hide bullet points
+      li.style.display = 'flex';
+      li.style.alignItems = 'center';
+            
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = participant;
+      nameSpan.style.flex = '1';
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.innerHTML = '🗑️';
+      deleteBtn.title = 'Unregister participant';
+      deleteBtn.style.marginLeft = '8px';
+      deleteBtn.style.background = 'none';
+      deleteBtn.style.border = 'none';
+      deleteBtn.style.cursor = 'pointer';
+      deleteBtn.style.fontSize = '1.1em';
+      deleteBtn.addEventListener('click', function() {
+        unregisterParticipant(participant);
+      });
+
+      li.appendChild(nameSpan);
+      li.appendChild(deleteBtn);
+      list.appendChild(li);
+    });
+  }
+
+  function unregisterParticipant(participant, activity) {
+    fetch(`/unregister`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ participant, activity }),
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to unregister');
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        fetchActivities();
+      }
+    })
+    .catch(err => {
+      alert('Error: ' + err.message);
+    });
+  }
+  // Initialize app
+  fetchActivities();
   // Initialize app
   fetchActivities();
 });
