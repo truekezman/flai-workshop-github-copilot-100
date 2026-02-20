@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", function() {
   const activitiesList = document.getElementById("activities-list");
   const activitySelect = document.getElementById("activity");
   const signupForm = document.getElementById("signup-form");
@@ -101,6 +101,63 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  function renderParticipants(participants) {
+    const list = document.getElementById('participants-list');
+    list.innerHTML = '';
+    participants.forEach(function(participant) {
+      const li = document.createElement('li');
+      li.style.listStyleType = 'none'; // Hide bullet points
+      li.style.display = 'flex';
+      li.style.alignItems = 'center';
+            
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = participant;
+      nameSpan.style.flex = '1';
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.innerHTML = '🗑️';
+      deleteBtn.title = 'Unregister participant';
+      deleteBtn.style.marginLeft = '8px';
+      deleteBtn.style.background = 'none';
+      deleteBtn.style.border = 'none';
+      deleteBtn.style.cursor = 'pointer';
+      deleteBtn.style.fontSize = '1.1em';
+      deleteBtn.addEventListener('click', function() {
+        unregisterParticipant(participant);
+      });
+
+      li.appendChild(nameSpan);
+      li.appendChild(deleteBtn);
+      list.appendChild(li);
+    });
+  }
+
+  function unregisterParticipant(participant) {
+    fetch(`/unregister`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ participant }),
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Failed to unregister');
+      return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        // Refresh the participant list
+        if (typeof loadParticipants === 'function') {
+          loadParticipants();
+        }
+      }
+    })
+    .catch(err => {
+      alert('Error: ' + err.message);
+    });
+  }
+  // Initialize app
+  fetchActivities();
   // Initialize app
   fetchActivities();
 });
